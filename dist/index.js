@@ -133,7 +133,7 @@ async function generateApp(options) {
         sources.push(config.icon);
     }
     if (config.maskable_icon) {
-        sources.push(path_1.default.join(publicFolder, 'pwa', config.maskable_icon));
+        sources.push(path_1.default.join(publicFolder, config.maskable_icon));
     }
     const maxTime = Math.max(...sources.map((v) => {
         try {
