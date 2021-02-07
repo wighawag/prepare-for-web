@@ -174,8 +174,10 @@ async function generateApp(options: Options) {
   if (config.icon) {
     sources.push(config.icon);
   }
-  if (config.maskable_icon) {
-    sources.push(path.join(publicFolder, config.maskable_icon));
+  if (config.maskable_icons) {
+    for (const maskableIcon of config.maskable_icons) {
+      sources.push(path.join(publicFolder, maskableIcon.src));
+    }
   }
   const maxTime = Math.max(
     ...sources.map((v) => {
@@ -243,35 +245,50 @@ async function generateApp(options: Options) {
     path: '/pwa/',
   });
 
-  if (config.maskable_icon) {
-    const maskableIconPath = path.join(faviconFolder, config.maskable_icon);
-    if (fs.existsSync(maskableIconPath)) {
-      const manifestPath = path.join(faviconFolder, 'manifest.json');
-      try {
-        const manifest = JSON.parse(fs.readFileSync(manifestPath).toString());
+  if (config.maskable_icons) {
+    const manifestPath = path.join(faviconFolder, 'manifest.json');
+    let manifest;
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestPath).toString());
+    } catch (e) {
+      console.error(
+        `failed to parse manifest ("${manifestPath}")`,
+        e
+      );
+    }
+    for (const maskableIcon of config.maskable_icons) {
+      const maskableIconPath = path.join(publicFolder, maskableIcon.src);
+      if (fs.existsSync(maskableIconPath)) {
         let found = false;
-        for (const icon of manifest.icons) {
-          if (icon.src.endsWith(`/${config.maskable_icon}`)) {
-            icon.purpose = 'any maskable';
-            found = true;
+        if (maskableIconPath.startsWith('pwa')) {
+          for (const icon of manifest.icons) {
+            if (icon.src.endsWith(`/${maskableIconPath}`)) {
+              icon.purpose = 'any maskable';
+              found = true;
+            }
           }
         }
-        if (found) {
-          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, '  '));
-        } else {
-          console.error(
-            `maskable icon file ("${maskableIconPath}") not found in manifest`
-          );
+        if (!found) {
+          manifest.icons.push({
+            src: '../' + maskableIcon.src,
+            sizes: maskableIcon.sizes,
+            type: maskableIcon.type,
+            purpose: 'maskable'
+          });
         }
-      } catch (e) {
-        console.error(
-          `failed to setup maskable icon file ("${maskableIconPath}")`,
-          e
-        );
+      } else {
+        console.warn(`maskable icon file ("${maskableIconPath}") does not exist`);
       }
-    } else {
-      console.warn(`maskable icon file ("${maskableIconPath}") does not exist`);
     }
+    try {
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, '  '));
+    } catch (e) {
+      console.error(
+        `failed to write manifest ("${manifestPath}")`,
+        e
+      );
+    }
+            
   }
 
   replaceRootPaths(faviconFolder, [
