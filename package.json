@@ -1,6 +1,6 @@
 {
   "name": "prepare-for-web",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "cli to prepare web folder with favicons / pwa files, etc..., based on a configuration file",
   "bin": {
     "prepare-for-web": "dist/index.js"
