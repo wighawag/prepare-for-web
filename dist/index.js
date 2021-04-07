@@ -62,7 +62,7 @@ const makeHtmlAttributes = (attributes) => {
     // eslint-disable-next-line no-param-reassign
     return keys.reduce((result, key) => (result += ` ${key}="${attributes[key]}"`), '');
 };
-async function generateBasicIndexHTML(templateFilePath, targetFile, folder, { title, meta, faviconsOutput, }) {
+async function generateBasicIndexHTML(templateFilePath, folder, { title, meta, faviconsOutput, }, targetFile) {
     print('generating html...');
     const templateContent = fs_extra_1.default.readFileSync(templateFilePath).toString();
     const template = handlebars_1.default.compile(templateContent);
@@ -82,7 +82,8 @@ async function generateBasicIndexHTML(templateFilePath, targetFile, folder, { ti
     }
     handlebars_1.default.registerPartial('APPLICATION', '{{{inject}}}');
     const newHTMLString = template({ title, inject });
-    fs_extra_1.default.writeFileSync(path_1.default.join(folder, targetFile), newHTMLString);
+    const dest = targetFile ? targetFile : path_1.default.join(folder, 'index.html');
+    fs_extra_1.default.writeFileSync(dest, newHTMLString);
     print(' done\n');
 }
 function replaceRootPaths(folder, files) {
@@ -244,7 +245,7 @@ async function generateApp(options) {
         'manifest.webapp',
         'browserconfig.xml',
     ]);
-    await generateBasicIndexHTML(options.templateFilePath, options.targetFile, publicFolder, {
+    await generateBasicIndexHTML(options.templateFilePath, publicFolder, {
         title,
         faviconsOutput,
         meta: [
@@ -281,7 +282,7 @@ async function generateApp(options) {
                 content: previewURL,
             },
         ],
-    });
+    }, options.targetFile);
     print('caching...');
     for (const source of sources) {
         try {
@@ -298,7 +299,7 @@ async function generateApp(options) {
         'config': { type: 'string', default: 'application.json', description: 'path to config file' },
         'template': { type: 'string', default: 'index.template.html', description: 'path to template index html file' },
         'target': { type: 'string', default: 'public', description: 'path to folder where file will be generated' },
-        'targetFile': { type: 'string', default: 'index.html', description: 'file name for generated index.html' },
+        'targetFile': { type: 'string', default: undefined, description: 'file name for generated index.html' },
         'url': { type: 'string', description: 'url of the application' },
         'cache': { type: 'string', description: 'path to the cache file' },
         'app-version': { type: 'string', description: 'version of the app' },

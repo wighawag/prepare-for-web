@@ -80,13 +80,13 @@ const makeHtmlAttributes = (attributes: {[key: string]: string}) => {
 
 async function generateBasicIndexHTML(
   templateFilePath: string,
-  targetFile: string,
   folder: string,
   {
     title,
     meta,
     faviconsOutput,
-  }: {title: string; meta: {[key: string]: string}[]; faviconsOutput: string[]}
+  }: {title: string; meta: {[key: string]: string}[]; faviconsOutput: string[]},
+  targetFile?: string,
 ) {
   print('generating html...');
   const templateContent = fs.readFileSync(templateFilePath).toString();
@@ -110,7 +110,8 @@ async function generateBasicIndexHTML(
 
   Handlebars.registerPartial('APPLICATION', '{{{inject}}}')
   const newHTMLString = template({ title, inject })
-  fs.writeFileSync(path.join(folder, targetFile), newHTMLString);
+  const dest = targetFile ? targetFile : path.join(folder, 'index.html');
+  fs.writeFileSync(dest, newHTMLString);
   print(' done\n');
 }
 
@@ -137,7 +138,7 @@ type Options = {
   configPath: string;
   templateFilePath: string;
   targetFolder: string;
-  targetFile: string;
+  targetFile?: string;
   cachePath?: string;
   applicationURL?: string;
   version?: string;
@@ -300,7 +301,7 @@ async function generateApp(options: Options) {
     'browserconfig.xml',
   ]);
 
-  await generateBasicIndexHTML(options.templateFilePath, options.targetFile, publicFolder, {
+  await generateBasicIndexHTML(options.templateFilePath, publicFolder, {
     title,
     faviconsOutput,
     meta: [
@@ -338,7 +339,7 @@ async function generateApp(options: Options) {
         content: previewURL,
       },
     ],
-  });
+  }, options.targetFile);
 
   print('caching...');
   for (const source of sources) {
@@ -357,7 +358,7 @@ async function generateApp(options: Options) {
     'config': { type: 'string', default: 'application.json', description: 'path to config file'},
     'template': { type: 'string', default: 'index.template.html', description: 'path to template index html file'},
     'target': { type: 'string', default: 'public', description: 'path to folder where file will be generated'},
-    'targetFile': {type: 'string', default: 'index.html', description: 'file name for generated index.html'},
+    'targetFile': {type: 'string', default: undefined, description: 'file name for generated index.html'},
     'url': { type: 'string', description: 'url of the application'},
     'cache': { type: 'string', description: 'path to the cache file'},
     'app-version': { type: 'string', description: 'version of the app'},
