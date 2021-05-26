@@ -66,7 +66,11 @@ async function generateBasicIndexHTML(templateFilePath, folder, { title, meta, f
     print('generating html...');
     const templateContent = fs_extra_1.default.readFileSync(templateFilePath).toString();
     const template = handlebars_1.default.compile(templateContent);
-    let inject = '';
+    let favicons = '';
+    for (const faviconHTML of faviconsOutput) {
+        favicons = favicons + faviconHTML + '\n';
+    }
+    let metaTags = '';
     if (meta) {
         const metas = meta
             .map((input) => {
@@ -74,14 +78,14 @@ async function generateBasicIndexHTML(templateFilePath, folder, { title, meta, f
             return `<meta${attrs}>`;
         })
             .join('\n');
-        inject += `${metas}\n`;
+        metaTags += `${metas}\n`;
     }
-    inject += '\n';
-    for (const faviconHTML of faviconsOutput) {
-        inject = inject + faviconHTML + '\n';
-    }
-    handlebars_1.default.registerPartial('APPLICATION', '{{{inject}}}');
-    const newHTMLString = template({ title, inject });
+    metaTags += '\n';
+    const metaTagsAndFavicons = metaTags + '\n' + favicons;
+    handlebars_1.default.registerPartial('META_TAGS', '{{{metaTags}}}');
+    handlebars_1.default.registerPartial('FAVICONS', '{{{favicons}}}');
+    handlebars_1.default.registerPartial('APPLICATION', '{{{metaTagsAndFavicons}}}'); // backward compatibility
+    const newHTMLString = template({ title, metaTags, favicons, metaTagsAndFavicons });
     const dest = targetFile ? targetFile : path_1.default.join(folder, 'index.html');
     fs_extra_1.default.writeFileSync(dest, newHTMLString);
     print(' done\n');

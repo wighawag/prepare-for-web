@@ -93,23 +93,29 @@ async function generateBasicIndexHTML(
 
   const template = Handlebars.compile(templateContent);
 
-  let inject = '';
+  let favicons = '';
+  for (const faviconHTML of faviconsOutput) {
+    favicons = favicons + faviconHTML + '\n';
+  }
+
+  let metaTags = '';
   if (meta) {
-    const metas = meta
+      const metas = meta
       .map((input) => {
         const attrs = makeHtmlAttributes(input);
         return `<meta${attrs}>`;
       })
       .join('\n');
-    inject += `${metas}\n`;
+      metaTags += `${metas}\n`;
   }
-  inject += '\n';
-  for (const faviconHTML of faviconsOutput) {
-    inject = inject + faviconHTML + '\n';
-  }
+  metaTags += '\n';
 
-  Handlebars.registerPartial('APPLICATION', '{{{inject}}}')
-  const newHTMLString = template({ title, inject })
+  const metaTagsAndFavicons = metaTags + '\n' + favicons;
+
+  Handlebars.registerPartial('META_TAGS', '{{{metaTags}}}');
+  Handlebars.registerPartial('FAVICONS', '{{{favicons}}}');
+  Handlebars.registerPartial('APPLICATION', '{{{metaTagsAndFavicons}}}'); // backward compatibility
+  const newHTMLString = template({ title, metaTags, favicons, metaTagsAndFavicons });
   const dest = targetFile ? targetFile : path.join(folder, 'index.html');
   fs.writeFileSync(dest, newHTMLString);
   print(' done\n');
