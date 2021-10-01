@@ -218,7 +218,7 @@ async function generateApp(options: Options) {
   if (ensName && !ensName.endsWith('.eth')) {
     ensName += '.eth';
   }
-  if (!ensName && config.url && config.url.endsWith('.eth.link')) {
+  if (!ensName && config.url && (config.url.endsWith('.eth.link') || config.url.endsWith('.eth.limo'))) {
     ensName = config.url.slice(0, config.url.length - 5);
   }
   if (ensName) {
