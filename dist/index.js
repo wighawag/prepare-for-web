@@ -62,7 +62,7 @@ const makeHtmlAttributes = (attributes) => {
     // eslint-disable-next-line no-param-reassign
     return keys.reduce((result, key) => (result += ` ${key}="${attributes[key]}"`), '');
 };
-async function generateBasicIndexHTML(templateFilePath, folder, { title, meta, faviconsOutput, }, targetFile) {
+async function generateBasicIndexHTML(templateFilePath, folder, { title, meta, faviconsOutput }, targetFile, base) {
     print('generating html...');
     const templateContent = fs_extra_1.default.readFileSync(templateFilePath).toString();
     const template = handlebars_1.default.compile(templateContent);
@@ -81,11 +81,34 @@ async function generateBasicIndexHTML(templateFilePath, folder, { title, meta, f
         metaTags += `${metas}\n`;
     }
     metaTags += '\n';
+    // ensure base as specified by application.js is used for meta and favicons
+    if (base !== undefined && base !== '/') {
+        // src should not be needed, as favicons and meta tags do not use that atrribute, leaving it though...
+        const findSrc = 'src="/';
+        const reSrc = new RegExp(findSrc, 'g');
+        const findHref = 'href="/';
+        const reHref = new RegExp(findHref, 'g');
+        const findContent = 'content="/';
+        const reContent = new RegExp(findContent, 'g');
+        favicons = favicons
+            .replace(reSrc, 'src="' + base)
+            .replace(reHref, 'href="' + base)
+            .replace(reContent, 'content="' + base);
+        metaTags = metaTags
+            .replace(reSrc, 'src="' + base)
+            .replace(reHref, 'href="' + base)
+            .replace(reContent, 'content="' + base);
+    }
     const metaTagsAndFavicons = metaTags + '\n' + favicons;
     handlebars_1.default.registerPartial('META_TAGS', '{{{metaTags}}}');
     handlebars_1.default.registerPartial('FAVICONS', '{{{favicons}}}');
     handlebars_1.default.registerPartial('APPLICATION', '{{{metaTagsAndFavicons}}}'); // backward compatibility
-    const newHTMLString = template({ title, metaTags, favicons, metaTagsAndFavicons });
+    const newHTMLString = template({
+        title,
+        metaTags,
+        favicons,
+        metaTagsAndFavicons
+    });
     const dest = targetFile ? targetFile : path_1.default.join(folder, 'index.html');
     fs_extra_1.default.writeFileSync(dest, newHTMLString);
     print(' done\n');
@@ -171,7 +194,9 @@ async function generateApp(options) {
     if (ensName && !ensName.endsWith('.eth')) {
         ensName += '.eth';
     }
-    if (!ensName && config.url && (config.url.endsWith('.eth.link') || config.url.endsWith('.eth.limo'))) {
+    if (!ensName &&
+        config.url &&
+        (config.url.endsWith('.eth.link') || config.url.endsWith('.eth.limo'))) {
         ensName = config.url.slice(0, config.url.length - 5);
     }
     if (ensName) {
@@ -200,7 +225,7 @@ async function generateApp(options) {
         version,
         logging: false,
         pixel_art: true,
-        path: '/pwa/',
+        path: '/pwa/'
     });
     if (config.maskable_icons) {
         const manifestPath = path_1.default.join(faviconFolder, 'manifest.json');
@@ -247,7 +272,7 @@ async function generateApp(options) {
         'manifest.json',
         'yandex-browser-manifest.json',
         'manifest.webapp',
-        'browserconfig.xml',
+        'browserconfig.xml'
     ]);
     await generateBasicIndexHTML(options.templateFilePath, publicFolder, {
         title,
@@ -257,7 +282,7 @@ async function generateApp(options) {
             { name: 'viewport', content: 'width=device-width,initial-scale=1' },
             {
                 name: 'title',
-                content: title,
+                content: title
             },
             { name: 'description', content: config.appDescription },
             { property: 'og:type', content: 'website' },
@@ -265,28 +290,28 @@ async function generateApp(options) {
             { property: 'og:title', content: title },
             {
                 property: 'og:description',
-                content: config.appDescription,
+                content: config.appDescription
             },
             {
                 property: 'og:image',
-                content: previewURL,
+                content: previewURL
             },
             { property: 'twitter:card', content: 'summary_large_image' },
             { property: 'twitter:url', content: config.url },
             {
                 property: 'twitter:title',
-                content: title,
+                content: title
             },
             {
                 property: 'twitter:description',
-                content: config.appDescription,
+                content: config.appDescription
             },
             {
                 property: 'twitter:image',
-                content: previewURL,
-            },
-        ],
-    }, options.targetFile);
+                content: previewURL
+            }
+        ]
+    }, options.targetFile, config.base);
     print('caching...');
     for (const source of sources) {
         try {
@@ -300,16 +325,38 @@ async function generateApp(options) {
 }
 (async () => {
     const args = yargs_1.default.options({
-        'config': { type: 'string', default: 'application.json', description: 'path to config file' },
-        'template': { type: 'string', default: 'index.template.html', description: 'path to template index html file' },
-        'target': { type: 'string', default: 'public', description: 'path to folder where file will be generated' },
-        'targetFile': { type: 'string', default: undefined, description: 'file name for generated index.html' },
-        'url': { type: 'string', description: 'url of the application' },
-        'cache': { type: 'string', description: 'path to the cache file' },
+        config: {
+            type: 'string',
+            default: 'application.json',
+            description: 'path to config file'
+        },
+        template: {
+            type: 'string',
+            default: 'index.template.html',
+            description: 'path to template index html file'
+        },
+        target: {
+            type: 'string',
+            default: 'public',
+            description: 'path to folder where file will be generated'
+        },
+        targetFile: {
+            type: 'string',
+            default: undefined,
+            description: 'file name for generated index.html'
+        },
+        url: { type: 'string', description: 'url of the application' },
+        cache: { type: 'string', description: 'path to the cache file' },
         'app-version': { type: 'string', description: 'version of the app' },
-        'use-package-version': { type: 'boolean', description: 'whether to read version for package.json' },
-        'cwd': { type: 'string', description: 'path in which to execute' },
-        'force': { type: 'boolean', description: 'force prepare regardless of cache' },
+        'use-package-version': {
+            type: 'boolean',
+            description: 'whether to read version for package.json'
+        },
+        cwd: { type: 'string', description: 'path in which to execute' },
+        force: {
+            type: 'boolean',
+            description: 'force prepare regardless of cache'
+        }
     }).argv;
     if (args['use-package-version'] && args['app-version']) {
         console.error(`cannot specify both --use-package-version and --app-version`);
