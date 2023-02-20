@@ -188,7 +188,11 @@ async function generateApp(options) {
     if (overrideURL && overrideURL !== '') {
         config.url = overrideURL;
     }
-    const title = config.appName + ' - ' + config.appShortDescription;
+    const title = config.title
+        ? config.title
+        : (config.name ? config.name : '') + (config.shortDescription || config.description)
+            ? ' - ' + (config.shortDescription || config.description)
+            : '';
     const previewURL = config.url + '/' + (config.preview || 'preview.png');
     let ensName = config.ensName;
     if (ensName && !ensName.endsWith('.eth')) {
@@ -211,9 +215,9 @@ async function generateApp(options) {
     const faviconFolder = path_1.default.join(publicFolder, 'pwa');
     fs_extra_1.default.ensureDirSync(faviconFolder);
     const faviconsOutput = await generateFavicons(faviconFolder, config.icon, {
-        appName: config.appName,
-        appShortName: config.appShortName,
-        appDescription: config.appDescription,
+        appName: config.name,
+        appShortName: config.shortName || config.name,
+        appDescription: config.description,
         developerName: config.developerName,
         developerURL: config.developerURL,
         background: config.background,
@@ -284,13 +288,13 @@ async function generateApp(options) {
                 name: 'title',
                 content: title
             },
-            { name: 'description', content: config.appDescription },
+            { name: 'description', content: config.description },
             { property: 'og:type', content: 'website' },
             { property: 'og:url', content: config.url },
             { property: 'og:title', content: title },
             {
                 property: 'og:description',
-                content: config.appDescription
+                content: config.description
             },
             {
                 property: 'og:image',
@@ -304,7 +308,7 @@ async function generateApp(options) {
             },
             {
                 property: 'twitter:description',
-                content: config.appDescription
+                content: config.description
             },
             {
                 property: 'twitter:image',
@@ -327,7 +331,7 @@ async function generateApp(options) {
     const args = yargs_1.default.options({
         config: {
             type: 'string',
-            default: 'application.json',
+            default: 'web-config.json',
             description: 'path to config file'
         },
         template: {
